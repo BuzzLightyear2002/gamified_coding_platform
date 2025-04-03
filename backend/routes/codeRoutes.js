@@ -48,42 +48,74 @@ router.get("/", authenticate, async (req, res) => {
 });
 
 // Run code
+
 router.post("/run", (req, res) => {
   const { language, code } = req.body;
 
   if (!code) return res.json({ output: "No code provided" });
 
+  const tempDir = path.join(__dirname, "temp");
+  if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+
   let command = "";
+  let tempFilePath = "";
+
   if (language === "javascript") {
-    // Save JavaScript code to a temporary file and execute it
-    const tempDir = path.join(__dirname, "temp");
-    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
-    const tempFilePath = path.join(tempDir, "temp_script.js");
+    tempFilePath = path.join(tempDir, "temp_script.js");
+    fs.writeFileSync(tempFilePath, code);
+    command = `node ${tempFilePath}`;
 
-    fs.writeFileSync(tempFilePath, code); // Write code to a file
-
-    command = `node ${tempFilePath}`; // Execute the JavaScript file
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.log(error);
+        res.json({ output: stderr || error.message });
+      } else {
+        res.json({ output: stdout });
+      }
+    });
   } else if (language === "python") {
-    // Save code to a temporary file and run it
+    tempFilePath = path.join(tempDir, "temp_script.py");
+    fs.writeFileSync(tempFilePath, code);
+    command = `python3 ${tempFilePath}`;
 
-    const tempDir = path.join(__dirname, "temp");
-    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
-    const tempFilePath = path.join(tempDir, "temp_script.py");
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.log(error);
+        res.json({ output: stderr || error.message });
+      } else {
+        res.json({ output: stdout });
+      }
+    });
+  } else if (language === "C#") {
+    tempFilePath = path.join(tempDir, "temp_script.cs");
+    fs.writeFileSync(tempFilePath, code);
+    const exePath = path.join(tempDir, "temp_script.exe");
+    command = `mcs -nologo ${tempFilePath}`;
+    exec(
+      `mcs -nologo -out:${exePath} ${tempFilePath}`,
+      (error, stdout, stderr) => {
+        // If stdout contains an error message, return it
+        if (stdout.trim().length > 0) {
+          return res.json({ output: stdout.trim() });
+        }
 
-    fs.writeFileSync(tempFilePath, code); // Write code to a file
+        // If an actual error occurs (e.g., csc command not found)
+        if (error) {
+          return res.json({ output: error.message });
+        }
 
-    command = `python3 ${tempFilePath}`; // Run the file
+        // Run the compiled .exe if compilation succeeds
+        exec(exePath, (runError, runStdout, runStderr) => {
+          if (runError) {
+            return res.json({ output: runError.message });
+          }
+          res.json({ output: runStdout });
+        });
+      }
+    );
   } else {
     return res.json({ output: "Unsupported language" });
   }
-
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      res.json({ output: stderr || error.message });
-    } else {
-      res.json({ output: stdout });
-    }
-  });
 });
 
 router.post("/submit/:id", async (req, res) => {
@@ -124,8 +156,11 @@ router.post("/submit/:id", async (req, res) => {
     } else if (language === "python") {
       const matchPython = code.match(/def\s+(\w+)\s*\(/);
       functionName = matchPython ? matchPython[1] : null;
+    } else if (language === "C#") {
+      const matchCSFunction =
+        code.match(/void\s+(\w+)\s*\(/) || code.match(/public\s+(\w+)\s*\(/);
+      functionName = matchCSFunction ? matchCSFunction[1] : null;
     }
-
     if (!functionName) {
       return res
         .status(400)
@@ -145,6 +180,96 @@ router.post("/submit/:id", async (req, res) => {
         filePath = path.join(tempDir, `test_case_${index}.py`);
         testCode = `${code}\nprint(${functionName}(${test.input}))`;
         execCommand = `python3 ${filePath}`;
+      } else if (language === "C#") {
+        filePath = path.join(tempDir, `test_case_${index}.cs`);
+
+        let modifiedCode = code;
+        testCode = modifiedCode;
+
+        try {
+          // Match the array part (e.g., [2, 7, 11, 15])
+          let arrayMatches = [...test.input.matchAll(/\[.*?\]/g)]; // Get all arrays
+          let extractedArrays = arrayMatches.map((match) => match[0]); // Extract matched arrays as strings
+
+          let numberMatch = test.input.replace(/\[.*?\]/g, "").trim(); // Remove arrays from input
+          numberMatch = numberMatch.replace(/^,|,$/g, "").trim(); // Remove leading/trailing commas
+
+          if (extractedArrays.includes(numberMatch)) {
+            numberMatch = null;
+          }
+
+          let inputParts = [];
+
+          // If the array part is found, push it as an object for C# format
+          if (extractedArrays && extractedArrays.length > 0) {
+            extractedArrays.forEach((array) => {
+              inputParts.push(array);
+            });
+          }
+
+          // If there's a number after the array, push it to the parts
+          if (numberMatch) {
+            // Trim any spaces and split by commas
+            const numbers = numberMatch.split(",").map((num) => num.trim());
+
+            // Push each number separately into inputParts
+            inputParts.push(...numbers);
+          }
+          // Process the inputs
+          if (inputParts.length === 1) {
+            let parsedInput;
+            const firstInput = inputParts[0];
+            if (typeof firstInput === "string") {
+              try {
+                // Try parsing only if it looks like a JSON array or number
+                if (firstInput.startsWith("[") && firstInput.endsWith("]")) {
+                  parsedInput = JSON.parse(firstInput); // Parse array
+                } else if (!isNaN(Number(firstInput))) {
+                  parsedInput = Number(firstInput); // Convert to number
+                } else {
+                  parsedInput = `"${firstInput}"`; // Keep as string
+                }
+              } catch (error) {
+                parsedInput = firstInput; // Fallback to original string
+              }
+            } else {
+              parsedInput = firstInput; // If already a number, assign directly
+            }
+
+            if (Array.isArray(parsedInput)) {
+              // If it's an array, format as {2, 7, 11, 15} for C#
+              const inputObjectString = `{${parsedInput.join(",")}}`;
+              testCode = modifiedCode.replace(/INPUT/g, inputObjectString);
+            } else {
+              // If it's a single number, replace INPUT with the number
+              testCode = modifiedCode.replace(/INPUT/g, parsedInput);
+            }
+          } else {
+            // Multiple inputs like [2, 7, 11, 15] and 9
+            inputParts.forEach((input, index) => {
+              let parsedInput = JSON.parse(input);
+              if (Array.isArray(parsedInput)) {
+                // If it's an array, format as {2, 7, 11, 15} for C#
+                const inputObjectString = `{${parsedInput.join(",")}}`;
+                testCode = testCode.replace(
+                  new RegExp(`INPUT${index + 1}`, "g"),
+                  inputObjectString
+                );
+              } else {
+                testCode = testCode.replace(
+                  new RegExp(`INPUT${index + 1}`, "g"),
+                  parsedInput
+                );
+              }
+            });
+          }
+        } catch (error) {
+          console.error("Error parsing input:", error);
+          return res.status(400).json({ error: "Invalid input format" });
+        }
+
+        const exePath = filePath.replace(".cs", ".exe");
+        execCommand = `mcs -nologo -out:${exePath} ${filePath} && mono ${exePath}`;
       } else {
         return res.status(400).json({ error: "Unsupported language" });
       }

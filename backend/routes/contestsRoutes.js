@@ -83,7 +83,6 @@ router.post("/participate", async (req, res) => {
     user.xp.total += 10; // ✅ 10 XP for joining a contest
     user.xp.contestsXP += 10; // ✅ 10 XP for joining a contest
 
-
     await user.save();
 
     // Add user to contest's participants
@@ -134,8 +133,11 @@ router.post("/submit", async (req, res) => {
     } else if (language === "python") {
       const matchPython = code.match(/def\s+(\w+)\s*\(/);
       functionName = matchPython ? matchPython[1] : null;
+    } else if (language === "C#") {
+      const matchCSFunction =
+        code.match(/void\s+(\w+)\s*\(/) || code.match(/public\s+(\w+)\s*\(/);
+      functionName = matchCSFunction ? matchCSFunction[1] : null;
     }
-
     if (!functionName) {
       return res
         .status(400)
@@ -154,6 +156,95 @@ router.post("/submit", async (req, res) => {
         filePath = path.join(tempDir, `test_case_${index}.py`);
         testCode = `${code}\nprint(${functionName}(${test.input}))`;
         execCommand = `python3 ${filePath}`;
+      } else if (language === "C#") {
+        filePath = path.join(tempDir, `test_case_${index}.cs`);
+
+        let modifiedCode = code;
+        testCode = modifiedCode;
+
+        try {
+          // Match the array part (e.g., [2, 7, 11, 15])
+          let arrayMatches = [...test.input.matchAll(/\[.*?\]/g)]; // Get all arrays
+          let extractedArrays = arrayMatches.map((match) => match[0]); // Extract matched arrays as strings
+
+          let numberMatch = test.input.replace(/\[.*?\]/g, "").trim(); // Remove arrays from input
+          numberMatch = numberMatch.replace(/^,|,$/g, "").trim(); // Remove leading/trailing commas
+          if (extractedArrays.includes(numberMatch)) {
+            numberMatch = null;
+          }
+
+          let inputParts = [];
+
+          // If the array part is found, push it as an object for C# format
+          if (extractedArrays && extractedArrays.length > 0) {
+            extractedArrays.forEach((array) => {
+              inputParts.push(array);
+            });
+          }
+          // If there's a number after the array, push it to the parts
+          if (numberMatch) {
+            // Trim any spaces and split by commas
+            const numbers = numberMatch.split(",").map((num) => num.trim());
+
+            // Push each number separately into inputParts
+            inputParts.push(...numbers);
+          }
+
+          // Process the inputs
+          if (inputParts.length === 1) {
+            let parsedInput;
+            const firstInput = inputParts[0];
+            console.log(firstInput);
+            if (typeof firstInput === "string") {
+              try {
+                // Try parsing only if it looks like a JSON array or number
+                if (firstInput.startsWith("[") && firstInput.endsWith("]")) {
+                  parsedInput = JSON.parse(firstInput); // Parse array
+                } else if (!isNaN(Number(firstInput))) {
+                  parsedInput = Number(firstInput); // Convert to number
+                } else {
+                  parsedInput = `"${firstInput}"`; // Keep as string
+                }
+              } catch (error) {
+                parsedInput = firstInput; // Fallback to original string
+              }
+            } else {
+              parsedInput = firstInput; // If already a number, assign directly
+            }
+            if (Array.isArray(parsedInput)) {
+              // If it's an array, format as {2, 7, 11, 15} for C#
+              const inputObjectString = `{${parsedInput.join(",")}}`;
+              testCode = modifiedCode.replace(/INPUT/g, inputObjectString);
+            } else {
+              // If it's a single number, replace INPUT with the number
+              testCode = modifiedCode.replace(/INPUT/g, parsedInput);
+            }
+          } else {
+            // Multiple inputs like [2, 7, 11, 15] and 9
+            inputParts.forEach((input, index) => {
+              let parsedInput = JSON.parse(input);
+              if (Array.isArray(parsedInput)) {
+                // If it's an array, format as {2, 7, 11, 15} for C#
+                const inputObjectString = `{${parsedInput.join(",")}}`;
+                testCode = testCode.replace(
+                  new RegExp(`INPUT${index + 1}`, "g"),
+                  inputObjectString
+                );
+              } else {
+                testCode = testCode.replace(
+                  new RegExp(`INPUT${index + 1}`, "g"),
+                  parsedInput
+                );
+              }
+            });
+          }
+        } catch (error) {
+          console.error("Error parsing input:", error);
+          return res.status(400).json({ error: "Invalid input format" });
+        }
+
+        const exePath = filePath.replace(".cs", ".exe");
+        execCommand = `mcs -nologo -out:${exePath} ${filePath} && mono ${exePath}`;
       } else {
         return res.status(400).json({ error: "Unsupported language" });
       }
@@ -226,7 +317,6 @@ router.post("/submit", async (req, res) => {
       user.xp.contestsXP += 50; // 50 XP for solving a problem
       user.xp.total += 50; // 50 XP for solving a problem
 
-
       // ✅ Check if all contest problems are solved
       const allProblemsSolved = contest.problems.every((p) =>
         participation.solvedProblems.includes(p._id.toString())
@@ -238,7 +328,6 @@ router.post("/submit", async (req, res) => {
         // ✅ Increase XP for completing the contest
         user.xp.contestsXP += 200; // 200 XP for finishing the contest
         user.xp.total += 200; // 200 XP for finishing the contest
-
       }
 
       await user.save();
