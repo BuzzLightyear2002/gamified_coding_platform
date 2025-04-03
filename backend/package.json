@@ -4,9 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon --ignore temp/ server.js",
-    "dev": "nodemon --ignore temp/ server.js",
-    "postinstall": "apt-get update && apt-get install -y g++ mono-devel"
-
+    "dev": "nodemon --ignore temp/ server.js"
   },
   "keywords": [],
   "author": "",
