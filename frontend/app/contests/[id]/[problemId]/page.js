@@ -15,6 +15,7 @@ const ProblemDetails = () => {
   const [submitOutput, setSubmitOutput] = useState(""); // Separate state for submit output
   const [submitError, setSubmitError] = useState(""); // Separate state for submit output
   const [activeTab, setActiveTab] = useState("run"); // "run" or "submit"
+  const [fetching, setFetching] = useState(false); // "run" or "submit"
 
   const [language, setLanguage] = useState("javascript");
   const { user: loggedInUser } = useAuth(); // Get the logged-in user from context
@@ -26,16 +27,19 @@ const ProblemDetails = () => {
       .catch((err) => console.error(err));
   }, [problemId]);
 
-  const runCode = () => {
+  async function runCode() {
+    setFetching(true);
     setActiveTab("run");
-    axios
-      .post(`${process.env.NEXT_PUBLIC_API_URL}/api/code/run`, {
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/code/run`,
+      {
         language,
         code,
-      })
-      .then((res) => setRunOutput(res.data.output)) // Store output in runOutput state
-      .catch(() => setRunOutput("⚠️ Error running code"));
-  };
+      }
+    );
+    setRunOutput(res.data.output);
+    setFetching(false); // Store output in runOutput state
+  }
 
   const { fetchUser } = useAuth(); // Get fetchUser function from context
 
@@ -159,12 +163,24 @@ const ProblemDetails = () => {
         <div className="p-4">
           {activeTab === "run" ? (
             <>
-              <h3 className="font-bold text-indigo-900">🔹 Run Output:</h3>
-              <CodeBlock
-                text={runOutput || "No run output yet"}
-                language={language}
-                theme={dracula}
-              />
+              {fetching ? (
+                <>
+                  <CodeBlock
+                    text={"Fetching the Result..."}
+                    language={language}
+                    theme={dracula}
+                  />
+                </>
+              ) : (
+                <>
+                  {" "}
+                  <CodeBlock
+                    text={runOutput || "No run output yet"}
+                    language={language}
+                    theme={dracula}
+                  />
+                </>
+              )}
             </>
           ) : (
             <>

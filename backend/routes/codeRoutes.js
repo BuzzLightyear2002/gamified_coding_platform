@@ -1,4 +1,5 @@
 const express = require("express");
+const axios = require('axios');
 const fs = require("fs");
 const User = require("../models/User");
 const path = require("path");
@@ -49,7 +50,7 @@ router.get("/", authenticate, async (req, res) => {
 
 // Run code
 
-router.post("/run", (req, res) => {
+router.post("/run", async (req, res) => {
   const { language, code } = req.body;
 
   if (!code) return res.json({ output: "No code provided" });
@@ -87,32 +88,30 @@ router.post("/run", (req, res) => {
       }
     });
   } else if (language === "C#") {
-    tempFilePath = path.join(tempDir, "temp_script.cs");
-    fs.writeFileSync(tempFilePath, code);
-    const exePath = path.join(tempDir, "temp_script.exe");
-    command = `mcs -nologo ${tempFilePath}`;
-    exec(
-      `mcs -nologo -out:${exePath} ${tempFilePath}`,
-      (error, stdout, stderr) => {
-        // If stdout contains an error message, return it
-        if (stdout.trim().length > 0) {
-          return res.json({ output: stdout.trim() });
-        }
-
-        // If an actual error occurs (e.g., csc command not found)
-        if (error) {
-          return res.json({ output: error.message });
-        }
-
-        // Run the compiled .exe if compilation succeeds
-        exec(exePath, (runError, runStdout, runStderr) => {
-          if (runError) {
-            return res.json({ output: runError.message });
+    // Instead of executing locally, call the external API for C# execution
+    try {
+      // Call your external API for C# code execution
+      const response = await axios.post('https://emkc.org/api/v2/piston/execute', {
+        "language": "csharp",
+        "version": "5", 
+        "files": [
+          {
+            "name": "main.cs",
+            "content": code
           }
-          res.json({ output: runStdout });
-        });
+        ],
+      });
+
+      // Return the output from the API response
+      if (response.data && response.data.run) {
+        res.json({ output: response.data.run.output });
+      } else {
+        res.json({ output: "Error executing C# code" });
       }
-    );
+    } catch (error) {
+      console.log(error);
+      res.json({ output: error.message });
+    }
   } else {
     return res.json({ output: "Unsupported language" });
   }
@@ -336,4 +335,6 @@ router.post("/submit/:id", async (req, res) => {
   }
 });
 
+
 module.exports = router;
+

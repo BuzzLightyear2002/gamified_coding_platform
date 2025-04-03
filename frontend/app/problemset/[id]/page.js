@@ -14,6 +14,7 @@ const ProblemDetails = () => {
   const [submitOutput, setSubmitOutput] = useState(""); // Separate state for submit output
   const [submitError, setSubmitError] = useState(""); // Separate state for submit output
   const [activeTab, setActiveTab] = useState("run"); // "run" or "submit"
+  const [fetching, setFetching] = useState(false); // "run" or "submit"
 
   const [language, setLanguage] = useState("javascript");
   const { user: loggedInUser } = useAuth(); // Get the logged-in user from context
@@ -25,34 +26,35 @@ const ProblemDetails = () => {
       .catch((err) => console.error(err));
   }, [id]);
 
-  const runCode = () => {
+  async function runCode() {
+    setFetching(true);
     setActiveTab("run");
-    axios
-      .post(`${process.env.NEXT_PUBLIC_API_URL}/api/code/run`, {
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/code/run`,
+      {
         language,
         code,
-      })
-      .then((res) => setRunOutput(res.data.output)) // Store output in runOutput state
-      .catch(() => setRunOutput("⚠️ Error running code"));
-  };
+      }
+    );
+    setRunOutput(res.data.output);
+    setFetching(false); // Store output in runOutput state
+  }
 
-  const submitCode = () => {
+  async function submitCode() {
     setActiveTab("submit");
+    setSubmitOutput("");
+    setSubmitError("");
 
-    axios
-      .post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/code/submit/${loggedInUser._id}`,
-        {
-          problemId: id,
-          language,
-          code,
-        }
-      )
-      .then((res) => {
-        setSubmitOutput(res.data.output); // Store submission results separately
-      })
-      .catch((res) => setSubmitError(res.response.data.error));
-  };
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/code/submit/${loggedInUser._id}`,
+      {
+        problemId: id,
+        language,
+        code,
+      }
+    );
+    setSubmitOutput(res.data.output); // Store submission results separately
+  }
 
   if (!problem)
     return (
@@ -95,7 +97,6 @@ const ProblemDetails = () => {
           <option value="javascript">JavaScript</option>
           <option value="python">Python</option>
           <option value="C#">C#</option>
-
         </select>
 
         {/* Code Input */}
@@ -149,11 +150,24 @@ const ProblemDetails = () => {
           {activeTab === "run" ? (
             <>
               <h3 className="font-bold text-indigo-900">🔹 Run Output:</h3>
-              <CodeBlock
-                text={runOutput || "No run output yet"}
-                language={language}
-                theme={dracula}
-              />
+              {fetching ? (
+                <>
+                  <CodeBlock
+                    text={"Fetching the Result..."}
+                    language={language}
+                    theme={dracula}
+                  />
+                </>
+              ) : (
+                <>
+                  {" "}
+                  <CodeBlock
+                    text={runOutput || "No run output yet"}
+                    language={language}
+                    theme={dracula}
+                  />
+                </>
+              )}
             </>
           ) : (
             <>
