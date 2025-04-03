@@ -1,5 +1,5 @@
 const express = require("express");
-const axios = require('axios');
+const axios = require("axios");
 const fs = require("fs");
 const User = require("../models/User");
 const path = require("path");
@@ -10,6 +10,66 @@ const Problem = require("../models/Problem"); // Import the Problem model
 const { authenticate } = require("../middleware/authMiddleware");
 
 const router = express.Router();
+
+// Get personalized problems based on tags from solved problems
+router.get("/personalised-problems", authenticate, async (req, res) => {
+  try {
+    const userId = req.user.userId; // Extract user ID from auth middleware
+    const user = await User.findById(userId).select(
+      "codingStats.solvedProblemIds"
+    );
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Fetch all problems
+    const problems = await Problem.find();
+
+    // Get the list of solved problem IDs
+    const solvedProblemIds = user.codingStats.solvedProblemIds;
+
+    // Find problems that have been solved by the user
+    const solvedProblems = await Problem.find({
+      _id: { $in: solvedProblemIds },
+    });
+
+    // Collect all tags from solved problems
+    let tags = [];
+    solvedProblems.forEach((problem) => {
+      tags = tags.concat(problem.tags);
+    });
+
+    // Create a frequency map for the tags
+    const tagFrequency = tags.reduce((acc, tag) => {
+      acc[tag] = (acc[tag] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Sort the tags by frequency (most common tags first)
+    const sortedTags = Object.keys(tagFrequency).sort(
+      (a, b) => tagFrequency[b] - tagFrequency[a]
+    );
+
+    // Filter problems by tags (we’ll suggest problems with matching tags)
+    const suggestedProblems = problems
+    .filter((problem) => {
+      // Check for matching tags
+      const matchingTags = problem.tags.filter((tag) => sortedTags.includes(tag));
+      return matchingTags.length > 0;
+    })
+    .map((problem) => {
+      // Add the matchingTags field to the problem object
+      const matchingTags = problem.tags.filter((tag) => sortedTags.includes(tag));
+      return { ...problem.toObject(), matchingTags };
+    });
+  
+    // Mark problems as completed if they exist in user's solvedProblemIds
+    const updatedProblems = suggestedProblems.filter((problem) => !solvedProblemIds.includes(problem._id.toString()));
+
+    res.json(updatedProblems);
+  } catch (error) {
+    res.status(500).json({ error: "Server error", details: error.message });
+  }
+});
 
 // Get problem details
 router.get("/:id", async (req, res) => {
@@ -91,16 +151,19 @@ router.post("/run", async (req, res) => {
     // Instead of executing locally, call the external API for C# execution
     try {
       // Call your external API for C# code execution
-      const response = await axios.post('https://emkc.org/api/v2/piston/execute', {
-        "language": "csharp",
-        "version": "5", 
-        "files": [
-          {
-            "name": "main.cs",
-            "content": code
-          }
-        ],
-      });
+      const response = await axios.post(
+        "https://emkc.org/api/v2/piston/execute",
+        {
+          language: "csharp",
+          version: "5",
+          files: [
+            {
+              name: "main.cs",
+              content: code,
+            },
+          ],
+        }
+      );
 
       // Return the output from the API response
       if (response.data && response.data.run) {
@@ -335,6 +398,4 @@ router.post("/submit/:id", async (req, res) => {
   }
 });
 
-
 module.exports = router;
-

@@ -66,6 +66,12 @@ const UserNavbar = ({ logout,user }) => (
         >
           Discussion
         </Link>
+        <Link
+          href="/sandbox"
+          className="text-gray-600 hover:text-gray-900"
+        >
+          Sandbox
+        </Link>
       </div>
     </div>
     <Link

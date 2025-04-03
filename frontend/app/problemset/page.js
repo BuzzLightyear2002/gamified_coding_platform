@@ -11,15 +11,21 @@ const ProblemsPage = () => {
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  const [showCompleted, setShowCompleted] = useState(false); // Show completed problems filter
+  const [showPersonalized, setShowPersonalized] = useState(false); // Show personalized problems filter
+
+  const [personalisedProblems, setPersonalisedProblems] = useState([]);
+
   useEffect(() => {
     if (loading) return; // Wait for auth state to load completely
-  
+
     if (!user || user.role !== "user") {
       router.replace("/"); // Redirect only if user is null after loading
       return;
     }
-  
+
     fetchProblems();
+    fetchPersonalisedProblems();
     fetchFavorites();
   }, [user, loading]);
 
@@ -36,6 +42,22 @@ const ProblemsPage = () => {
       setProblems(res.data);
     } catch (error) {
       console.error("Error fetching problems", error);
+    }
+  };
+
+  const fetchPersonalisedProblems = async () => {
+    try {
+      const res = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/code/personalised-problems`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        }
+      );
+      setPersonalisedProblems(res.data); // Assuming the response is personalized problems
+    } catch (error) {
+      console.error("Error fetching personalized problems", error);
     }
   };
 
@@ -101,6 +123,7 @@ const ProblemsPage = () => {
   const [difficulty, setDifficulty] = useState("All");
   const [filteredProblems, setFilteredProblems] = useState([]);
 
+
   useEffect(() => {
     let filtered = problems;
 
@@ -116,9 +139,19 @@ const ProblemsPage = () => {
       );
     }
 
-    setFilteredProblems(filtered);
-  }, [search, difficulty, problems]);
+    if (showCompleted) {
+      filtered = filtered.filter((problem) => problem.completed);
+    }
 
+    if (showPersonalized) {
+      // Filter based on personalized problems logic (already fetched in fetchPersonalisedProblems)
+      // Assuming "showPersonalized" simply means to show personalized suggestions
+      filtered = personalisedProblems;
+    }
+
+    setFilteredProblems(filtered);
+  }, [search, difficulty, problems, showCompleted, showPersonalized]);
+  console.log(filteredProblems);
   return (
     <div className="p-16 mx-auto">
       <div className="">
@@ -152,6 +185,27 @@ const ProblemsPage = () => {
         </select>
       </div>
 
+      {/* Filters */}
+      <div className="flex gap-4 mb-6">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={showCompleted}
+            onChange={() => setShowCompleted(!showCompleted)}
+            className="form-checkbox"
+          />
+          Show Completed Problems
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={showPersonalized}
+            onChange={() => setShowPersonalized(!showPersonalized)}
+            className="form-checkbox"
+          />
+          Show Personalized Problems Suggestion
+        </label>
+      </div>
       {/* Problem List */}
       <ul className="gap-6 grid grid-cols-2">
         {filteredProblems.map((problem) => (
@@ -174,7 +228,15 @@ const ProblemsPage = () => {
               >
                 {problem.difficulty}
               </p>
-              <p className="text-blue-950 text-xs">{problem.tags.join(", ")}</p>
+              {showPersonalized ? (
+                <p className="text-green-600 text-md font-bold">
+                  {problem.matchingTags?.map((e) => e)}
+                </p>
+              ) : (
+                <p className="text-blue-950 text-xs">{problem.tags.join(", ")}</p>
+              )}
+
+              {/* <p className="text-blue-950 text-xs">{problem.tags.join(", ")}</p> */}
               {problem.completed && (
                 <span className="text-green-600 font-bold">✔ Completed</span>
               )}
