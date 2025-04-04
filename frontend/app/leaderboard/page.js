@@ -1,10 +1,8 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Link from "next/link";
-
 
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -14,7 +12,9 @@ export default function LeaderboardPage() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/leaderboard`);
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/leaderboard`
+        );
         setLeaderboard(res.data.users);
       } catch (error) {
         console.error("Error fetching leaderboard:", error);
@@ -28,7 +28,9 @@ export default function LeaderboardPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-4 text-center">🏆 Leaderboard</h1>
+      <h1 className="text-2xl font-semibold mb-4 text-center">
+        🏆 Leaderboard
+      </h1>
       {loading ? (
         <p className="text-center">Loading...</p>
       ) : (
@@ -44,7 +46,6 @@ export default function LeaderboardPage() {
             </thead>
             <tbody>
               {leaderboard.map((user, index) => (
-                <Link href={`/profile/${user._id}`}>
                 <tr
                   key={user._id}
                   className={`border-b ${
@@ -53,17 +54,20 @@ export default function LeaderboardPage() {
                 >
                   <td className="py-2 px-4">{index + 1}</td>
                   <td className="py-2 px-4 flex items-center gap-2">
-                    <img
-                      src={user.avatar || "/default-avatar.png"}
-                      alt="User Avatar"
-                      className="w-8 h-8 rounded-full"
-                    />
-                    {user.name}
+                    <Link className="flex text-center justify-center items-center" href={`/profile/${user._id}`}>
+                      <img
+                        src={user.avatar || "/default-avatar.png"}
+                        alt="User Avatar"
+                        className="w-8 h-8 mx-2 rounded-full"
+                      />
+                      {user.name}
+                    </Link>
                   </td>
                   <td className="py-2 px-4">{user.xp.total}</td>
-                  <td className="py-2 px-4">{`${Math.floor((user.xp.total+100)/100)}`}</td>
+                  <td className="py-2 px-4">{`${Math.floor(
+                    (user.xp.total + 100) / 100
+                  )}`}</td>
                 </tr>
-                </Link>
               ))}
             </tbody>
           </table>

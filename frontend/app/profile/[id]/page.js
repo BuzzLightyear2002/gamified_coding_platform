@@ -16,6 +16,7 @@ const ProfilePage = () => {
   const [friendStatus, setFriendStatus] = useState(null); // New state for friend status
   const [requests, setRequests] = useState([]); // Track incoming friend requests
   const [editData, setEditData] = useState({ name: "", bio: "", avatar: "" });
+  const [avatarError, setAvatarError] = useState("");
 
   const { user: loggedInUser } = useAuth(); // Get the logged-in user from context
   const isOwnProfile = loggedInUser && loggedInUser._id === id; // Check if profile belongs to logged-in user
@@ -152,6 +153,10 @@ const ProfilePage = () => {
   };
 
   const handleEdit = async () => {
+    if (avatarError) {
+      alert("⚠️ Cannot save. Avatar URL is invalid.");
+      return;
+    }
     try {
       const token = localStorage.getItem("authToken");
       const res = await axios.put(
@@ -174,15 +179,30 @@ const ProfilePage = () => {
       <p className="text-center mt-6 text-lg text-red-500">User not found</p>
     );
 
+    const validateImageUrl = async (url) => {
+      // Simplified Regex to check basic URL structure for images
+      const urlPattern = /^(https?:\/\/.*\.(?:png|jpg|jpeg|gif|svg|webp))$/i;
+    
+      // Check if the URL matches the pattern for image files
+      if (!urlPattern.test(url)) {
+        throw new Error("Invalid URL format");
+      }
+        return true; // URL is valid and the image is accessible
+    };
+    
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg mt-6 border">
       {/* User Info */}
       <div className="flex flex-col md:flex-row items-center gap-6">
         <Image
+          key={user.avatar}
           src={user.avatar || "/default-avatar.png"}
           alt="Profile"
           width={100}
           height={100}
+          onError={(e) => {
+            e.currentTarget.src = "/default-avatar.png";
+          }}
           className="rounded-full border-4 border-gray-300"
         />
         <div className="text-center md:text-left">
@@ -260,48 +280,48 @@ const ProfilePage = () => {
         </div>
       </div> */}
 
-{/* Coding Activity */}
-<div className="mt-6">
-<h3 className="text-lg font-semibold">Coding Activity</h3>
-  <div className="mt-2 space-y-2 text-gray-600">
-    <p>
-      ✅ <>Solved Problems:</>{" "}
-      <span className="font-semibold">
-        {user.codingStats.solvedQuestions} Problems
-      </span>
-    </p>
-    <p>
-      🏆 <>Contests Participated:</>{" "}
-      <span className="font-semibold">
-        {user.participatedContests.length} Contests
-      </span>
-    </p>
-    <p>
-      🎯 <>Contests Completed:</>{" "}
-      <span className="font-semibold">
-        {
-          user.participatedContests.filter((e) => e.completed === true).length
-        }{" "}
-        Contests
-      </span>
-    </p>
-    <p>
-      🧩 <>Problems Solved in Contests:</>{" "}
-      <span className="font-semibold">
-        {user.participatedContests.reduce(
-          (sum, contest) => sum + contest.solvedProblems.length,
-          0
-        )}{" "}
-        Problems
-      </span>
-    </p>
-    <p>
-      👥 <>Friends:</>{" "}
-      <span className="font-semibold">{user.friends.length} Friends</span>
-    </p>
-  </div>
-</div>
-
+      {/* Coding Activity */}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold">Coding Activity</h3>
+        <div className="mt-2 space-y-2 text-gray-600">
+          <p>
+            ✅ <>Solved Problems:</>{" "}
+            <span className="font-semibold">
+              {user.codingStats.solvedQuestions} Problems
+            </span>
+          </p>
+          <p>
+            🏆 <>Contests Participated:</>{" "}
+            <span className="font-semibold">
+              {user.participatedContests.length} Contests
+            </span>
+          </p>
+          <p>
+            🎯 <>Contests Completed:</>{" "}
+            <span className="font-semibold">
+              {
+                user.participatedContests.filter((e) => e.completed === true)
+                  .length
+              }{" "}
+              Contests
+            </span>
+          </p>
+          <p>
+            🧩 <>Problems Solved in Contests:</>{" "}
+            <span className="font-semibold">
+              {user.participatedContests.reduce(
+                (sum, contest) => sum + contest.solvedProblems.length,
+                0
+              )}{" "}
+              Problems
+            </span>
+          </p>
+          <p>
+            👥 <>Friends:</>{" "}
+            <span className="font-semibold">{user.friends.length} Friends</span>
+          </p>
+        </div>
+      </div>
 
       {/* Friend Requests Section */}
       {isOwnProfile && requests.length > 0 && (
@@ -402,11 +422,22 @@ const ProfilePage = () => {
               type="text"
               className="w-full border p-2 rounded mb-2"
               value={editData.avatar}
-              onChange={(e) =>
-                setEditData({ ...editData, avatar: e.target.value })
-              }
+              onChange={async (e) => {
+                const url = e.target.value;
+                setEditData({ ...editData, avatar: url });
+
+                try {
+                  await validateImageUrl(url);
+                  setAvatarError(""); // Clear previous error
+                } catch (error) {
+                  setAvatarError(error.message);
+                }
+              }}
               placeholder="Avatar URL"
             />
+            {avatarError && (
+              <p className="text-red-600 text-sm mt-1">{avatarError}</p>
+            )}
             <div className="flex justify-between mt-3">
               <button
                 onClick={() => setIsEditing(false)}
