@@ -3,6 +3,8 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import Link from "next/link";
+
 
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState([]);
