@@ -42,6 +42,7 @@ export default function LeaderboardPage() {
             </thead>
             <tbody>
               {leaderboard.map((user, index) => (
+                <Link href={`/profile/${user._id}`}>
                 <tr
                   key={user._id}
                   className={`border-b ${
@@ -60,6 +61,7 @@ export default function LeaderboardPage() {
                   <td className="py-2 px-4">{user.xp.total}</td>
                   <td className="py-2 px-4">{`${Math.floor((user.xp.total+100)/100)}`}</td>
                 </tr>
+                </Link>
               ))}
             </tbody>
           </table>
