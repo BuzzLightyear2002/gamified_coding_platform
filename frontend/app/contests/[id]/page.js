@@ -83,10 +83,13 @@ const ContestDetailPage = () => {
         <p className="text-green-700 font-bold mt-4">
           ✅ You have completed this contest!
         </p>
-      )}
-      <p className="text-gray-600">
-        🕒 {contest.startTime} | ⏳ {contest.duration}
-      </p>
+      )}          <p className="text-gray-600 text-sm mt-1">
+      🕒 Start:
+      {new Date(contest.startTime).toLocaleString("en-US", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })} | ⏳ {contest.duration}
+    </p>
       <p className="mt-4 text-lg text-gray-700">{contest.description}</p>
 
       {!hasParticipated ? (
