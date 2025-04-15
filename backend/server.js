@@ -24,6 +24,7 @@ app.use(
     credentials: true,
   })
 );
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/code", codeRoutes);
