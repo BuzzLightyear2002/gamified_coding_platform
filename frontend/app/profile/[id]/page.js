@@ -192,6 +192,9 @@ const ProfilePage = () => {
     
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg mt-6 border">
+      <h1 className="text-2xl font-bold mb-6 border-b pb-2">
+  {isOwnProfile ? "Your Profile" : `${user.name}'s Profile`}
+</h1>
       {/* User Info */}
       <div className="flex flex-col md:flex-row items-center gap-6">
         <Image
@@ -206,7 +209,7 @@ const ProfilePage = () => {
           className="rounded-full border-4 border-gray-300"
         />
         <div className="text-center md:text-left">
-          <h2 className="text-2xl font-bold">{user.name}</h2>
+          <h2 className="text-2xl text-indigo-950 font-bold">{user.name}</h2>
           <p className="text-gray-500">{user.bio || "No bio yet"}</p>
 
           {isOwnProfile ? (
@@ -236,12 +239,9 @@ const ProfilePage = () => {
                   Request Sent ⏳
                 </button>
               ) : (
-                <button
-                  className="mt-2 px-4 py-1 text-sm text-white bg-green-500 hover:bg-green-600 rounded-md"
-                  onClick={sendFriendRequest}
-                >
-                  Add Friend
-                </button>
+<button className="text-sm px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md">
+  Add Friend
+</button>
               )}
             </>
           )}
@@ -255,7 +255,7 @@ const ProfilePage = () => {
         </div>
         <div className="w-full bg-gray-200 rounded-full h-3 relative">
           <div
-            className="bg-blue-500 h-3 rounded-full transition-all"
+            className="bg-indigo-700 h-3 rounded-full transition-all"
             style={{ width: `${((user.xp.total % 100) / 100) * 100}%` }}
           ></div>
         </div>
@@ -281,8 +281,8 @@ const ProfilePage = () => {
       </div> */}
 
       {/* Coding Activity */}
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold">Coding Activity</h3>
+      <div className="mt-8">
+      <h3 className="text-xl font-semibold mb-3 border-b pb-1">Coding Activity</h3>
         <div className="mt-2 space-y-2 text-gray-600">
           <p>
             ✅ <>Solved Problems:</>{" "}
@@ -356,8 +356,8 @@ const ProfilePage = () => {
 
       {/* Friends List */}
       <div className="mt-6">
-        <h3 className="text-lg font-semibold">Friends</h3>
-        <div className="flex gap-3 flex-wrap mt-2">
+      <h3 className="text-xl font-semibold mb-3 border-b pb-1">Friends</h3>
+      <div className="flex gap-3 flex-wrap mt-2">
           {user.friends && user.friends.length > 0 ? (
             user.friends.map((friend) => (
               <Link key={friend._id} href={`/profile/${friend._id}`}>
@@ -378,7 +378,7 @@ const ProfilePage = () => {
           )}
         </div>
         <div className="mt-6">
-          <h3 className="text-lg font-semibold">Favorite Questions</h3>
+          <h3 className="text-xl font-semibold mb-3 border-b pb-1">Favorite Questions</h3>
           <div className="flex gap-3 flex-wrap mt-2">
             {user.favorites.savedQuestions &&
             user.favorites.savedQuestions.length > 0 ? (

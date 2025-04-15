@@ -118,10 +118,10 @@ const ThreadViewPage = () => {
             <div className="flex">
               <p className="text-sm text-gray-500">By {thread.creator.name}</p>
               <img
-                src={thread.creator.avatar}
-                alt="avatar"
-                className="w-6 h-6 mx-2 rounded-full"
-              />
+                        src={thread.creator.avatar || "/default-avatar.png"}
+                        alt="User Avatar"
+                        className="w-8 h-8 mx-2 rounded-full"
+                      />
             </div>
           </Link>
           <p className="text-sm text-gray-500">{thread.summary}</p>
@@ -165,11 +165,11 @@ const ThreadViewPage = () => {
                   <div>
                     <Link href={`/profile/${comment.creator._id}`}>
                       <div className="font-bold flex">
-                        <img
-                          src={comment.creator.avatar}
-                          alt="avatar"
-                          className="w-6 h-6 mx-2 rounded-full"
-                        />
+                      <img
+                        src={comment.creator.avatar || "/default-avatar.png"}
+                        alt="User Avatar"
+                        className="w-8 h-8 mx-2 rounded-full"
+                      />
                         {comment.creator.name}
                       </div>
                     </Link>

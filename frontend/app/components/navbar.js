@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "../../context/AuthContext";
 import { useEffect, useState } from "react";
 
@@ -24,10 +25,15 @@ const Navbar = () => {
 };
 
 const GuestNavbar = () => (
-  <nav className="bg-white shadow-md py-4 px-16 flex justify-between items-center">
+  <nav className="bg-white shadow-md py-1 px-16 flex justify-between items-center">
     <div className="flex gap-7">
-      <Link href="/" className="text-xl font-bold text-blue-900">
-        Logo
+    <Link href="/" className="text-xl font-bold text-blue-900">
+      <Image
+          src={"/logo.png"}
+          alt="Profile"
+          width={50}
+          height={50}
+        />   
       </Link>
     </div>
     <div className="space-x-4">
@@ -45,10 +51,15 @@ const GuestNavbar = () => (
 );
 
 const UserNavbar = ({ logout,user }) => (
-  <nav className="bg-white shadow-md py-4 px-16 flex justify-between items-center">
+  <nav className="bg-white shadow-md py-1 px-16 flex justify-between items-center">
     <div className="flex gap-7">
       <Link href="/" className="text-xl font-bold text-blue-900">
-        Logo
+      <Image
+          src={"/logo.png"}
+          alt="Profile"
+          width={50}
+          height={50}
+        />   
       </Link>
       <div className="flex gap-7 mt-1 items-center">
         <Link href="/problemset" className="text-gray-600 hover:text-gray-900">
@@ -87,10 +98,15 @@ const UserNavbar = ({ logout,user }) => (
 );
 
 const AdminNavbar = ({ logout }) => (
-  <nav className="bg-white shadow-md py-4 px-16 flex justify-between items-center">
+  <nav className="bg-white shadow-md py-1 px-16 flex justify-between items-center">
     <div className="flex gap-7">
-      <Link href="/" className="text-xl font-bold text-blue-900">
-        Logo
+    <Link href="/" className="text-xl font-bold text-blue-900">
+      <Image
+          src={"/logo.png"}
+          alt="Profile"
+          width={50}
+          height={50}
+        />   
       </Link>
       <div className="flex gap-7 mt-1 items-center">
         <Link href="/admin/problems" className="text-gray-600 hover:text-gray-900">

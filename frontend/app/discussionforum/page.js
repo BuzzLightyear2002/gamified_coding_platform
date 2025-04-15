@@ -102,15 +102,23 @@ const DiscussionForumPage = () => {
   };
 
   return (
-    <div className="p-4 sm:p-8">
-      <h1 className="text-4xl font-bold text-center mb-4">Discussion Forum</h1>
+    <div className="p-16 mx-auto">
+      <div className="">
+        <h1 className="text-4xl p-8 text-center font-bold mb-4 text-indigo-950">
+        Discussion Forum
+        </h1>
+        <p className="text-base text-center mb-4 text-indigo-950">
+       Discuss, Chat and brainstorm about the problems. 
+
+        </p>
+      </div>
 
       {/* Search and Filter */}
-      <div className="flex flex-col sm:flex-row justify-between mb-6 gap-4">
+      <div className="flex flex-col mt-16 sm:flex-row justify-between mb-4 gap-3">
         <input
           type="text"
           placeholder="Search by topic..."
-          className="w-full sm:w-2/3 px-3 py-2 border rounded-lg"
+          className="w-full  px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -182,11 +190,12 @@ const DiscussionForumPage = () => {
               {/* Bottom Information (always at the bottom) */}
               <div className="flex justify-between items-center mt-4">
                 <div className="flex items-center gap-2">
-                  <img
-                    src={thread.creator.avatar}
-                    alt="avatar"
-                    className="w-8 h-8 rounded-full border-2 border-gray-300"
-                  />
+
+                <img
+                        src={thread.creator.avatar || "/default-avatar.png"}
+                        alt="User Avatar"
+                        className="w-8 h-8 mx-2 rounded-full"
+                      />
                   <p className="text-xs text-gray-500">{thread.creator.name}</p>
                 </div>
                 <div className="flex gap-4 text-xs text-gray-500">

@@ -27,51 +27,85 @@ export default function LeaderboardPage() {
   }, []);
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-4 text-center">
-        🏆 Leaderboard
-      </h1>
+    <div className="p-16 mx-auto">
+      <div className="">
+        <h1 className="text-4xl p-8 text-center font-bold mb-4 text-indigo-950">
+        Leaderboard
+        </h1>
+        <p className="text-base text-center mb-4 text-indigo-950">
+       Compare, Compete and Grow in the leaderboard section. 
+
+        </p>
+      </div>
       {loading ? (
         <p className="text-center">Loading...</p>
       ) : (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <table className="w-full border-collapse">
-            <thead className="bg-indigo-600 text-white">
-              <tr>
-                <th className="py-2 px-4 text-left">Rank</th>
-                <th className="py-2 px-4 text-left">User</th>
-                <th className="py-2 px-4 text-left">XP</th>
-                <th className="py-2 px-4 text-left">Level</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaderboard.map((user, index) => (
+        <div className="mt-16 mb-4 overflow-x-auto">
+        <table className="w-full text-left border-separate border-spacing-y-2">
+          <thead className="bg-slate-600 text-white rounded-lg">
+            <tr>
+              <th className="py-3 px-4 rounded-l-lg">Rank</th>
+              <th className="py-3 px-4">User</th>
+              <th className="py-3 px-4">XP</th>
+              <th className="py-3 px-4 rounded-r-lg">Level</th>
+            </tr>
+          </thead>
+          <tbody>
+            {leaderboard.map((user, index) => {
+              const isCurrentUser = user._id === userId;
+      
+              const getRankStyle = (idx) => {
+                switch (idx) {
+                  case 0:
+                    return "bg-yellow-100 border-l-4 border-yellow-400";
+                  case 1:
+                    return "bg-gray-100 border-l-4 border-gray-400";
+                  case 2:
+                    return "bg-orange-100 border-l-4 border-orange-400";
+                  default:
+                    return "bg-white";
+                }
+              };
+      
+              return (
                 <tr
                   key={user._id}
-                  className={`border-b ${
-                    user._id === userId ? "bg-yellow-100 font-bold" : ""
-                  }`}
+                  className={`rounded-lg shadow-sm ${getRankStyle(index)} ${
+                    isCurrentUser ? "ring-2 ring-indigo-400" : ""
+                  } transition hover:scale-[1.01]`}
                 >
-                  <td className="py-2 px-4">{index + 1}</td>
-                  <td className="py-2 px-4 flex items-center gap-2">
-                    <Link className="flex text-center justify-center items-center" href={`/profile/${user._id}`}>
+                  <td className="py-3 px-4 font-semibold text-gray-800">
+                    #{index + 1}
+                  </td>
+                  <td className="py-3 px-4 flex items-center gap-3">
+                    <Link
+                      href={`/profile/${user._id}`}
+                      className="flex items-center gap-2 hover:underline"
+                    >
                       <img
                         src={user.avatar || "/default-avatar.png"}
-                        alt="User Avatar"
-                        className="w-8 h-8 mx-2 rounded-full"
+                        alt={user.name}
+                        className="w-9 h-9 rounded-full object-cover border border-gray-300"
                       />
-                      {user.name}
+                      <span className="font-medium text-indigo-900">{user.name}</span>
                     </Link>
                   </td>
-                  <td className="py-2 px-4">{user.xp.total}</td>
-                  <td className="py-2 px-4">{`${Math.floor(
-                    (user.xp.total + 100) / 100
-                  )}`}</td>
+                  <td className="py-3 px-4">
+                    <span className="bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full font-semibold">
+                      {user.xp.total} XP
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-semibold">
+                      Level {Math.floor((user.xp.total + 100) / 100)}
+                    </span>
+                  </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>      
       )}
     </div>
   );

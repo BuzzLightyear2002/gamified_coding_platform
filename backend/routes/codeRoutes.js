@@ -137,7 +137,7 @@ router.post("/run", async (req, res) => {
   } else if (language === "python") {
     tempFilePath = path.join(tempDir, "temp_script.py");
     fs.writeFileSync(tempFilePath, code);
-    command = `python3 ${tempFilePath}`;
+    command = `python ${tempFilePath}`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
@@ -241,7 +241,7 @@ router.post("/submit/:id", async (req, res) => {
       } else if (language === "python") {
         filePath = path.join(tempDir, `test_case_${index}.py`);
         testCode = `${code}\nprint(${functionName}(${test.input}))`;
-        execCommand = `python3 ${filePath}`;
+        execCommand = `python ${filePath}`;
       } else if (language === "C#") {
         filePath = path.join(tempDir, `test_case_${index}.cs`);
 

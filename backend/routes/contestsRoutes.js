@@ -64,7 +64,7 @@ router.post("/participate", async (req, res) => {
     // Check if the user already participated
     if (
       user.participatedContests.some(
-        (p) => p.contestId.toString() === contestId
+        (p) => p._id.toString() === contestId
       )
     ) {
       return res
