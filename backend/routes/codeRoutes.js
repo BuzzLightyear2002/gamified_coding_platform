@@ -31,7 +31,6 @@ router.get("/personalised-problems", authenticate, async (req, res) => {
     const solvedProblems = await Problem.find({
       _id: { $in: solvedProblemIds },
     });
-
     // Collect all tags from solved problems
     let tags = [];
     solvedProblems.forEach((problem) => {
@@ -51,20 +50,38 @@ router.get("/personalised-problems", authenticate, async (req, res) => {
 
     // Filter problems by tags (we’ll suggest problems with matching tags)
     const suggestedProblems = problems
-    .filter((problem) => {
-      // Check for matching tags
-      const matchingTags = problem.tags.filter((tag) => sortedTags.includes(tag));
-      return matchingTags.length > 0;
-    })
-    .map((problem) => {
-      // Add the matchingTags field to the problem object
-      const matchingTags = problem.tags.filter((tag) => sortedTags.includes(tag));
-      return { ...problem.toObject(), matchingTags };
-    });
-  
-    // Mark problems as completed if they exist in user's solvedProblemIds
-    const updatedProblems = suggestedProblems.filter((problem) => !solvedProblemIds.includes(problem._id.toString()));
+      .filter((problem) => {
+        // Check for matching tags
+        const matchingTags = problem.tags.filter((tag) =>
+          sortedTags.includes(tag)
+        );
+        return matchingTags.length > 0;
+      })
+      .map((problem) => {
+        // Add the matchingTags field to the problem object
+        const matchingTags = problem.tags.filter((tag) =>
+          sortedTags.includes(tag)
+        );
+        return { ...problem.toObject(), matchingTags };
+      });
 
+    // Mark problems as completed if they exist in user's solvedProblemIds
+    const updatedProblems = suggestedProblems.filter(
+      (problem) => !solvedProblemIds.includes(problem._id.toString())
+    );
+
+    if (updatedProblems.length === 0) {
+      const easyProblems = problems.filter(
+        (e) => e.difficulty === "Easy" && !solvedProblemIds.includes(e._id)
+      );
+      if (easyProblems.length === 0) {
+        const mediumProblems = problems.filter(
+          (e) => e.difficulty === "Medium" && !solvedProblemIds.includes(e._id)
+        );
+        return res.json(mediumProblems);
+      }
+      return res.json(easyProblems);
+    }
     res.json(updatedProblems);
   } catch (error) {
     res.status(500).json({ error: "Server error", details: error.message });

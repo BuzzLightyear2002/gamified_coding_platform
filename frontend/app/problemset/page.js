@@ -4,23 +4,25 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { FaRegStar, FaStar } from "react-icons/fa";
 
 const ProblemsPage = () => {
   const [problems, setProblems] = useState([]);
-  const [favoriteProblems, setFavoriteProblems] = useState(new Set()); // Store favorite problems
+  const [favoriteProblems, setFavoriteProblems] = useState(new Set());
+  const [personalisedProblems, setPersonalisedProblems] = useState([]);
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  const [showCompleted, setShowCompleted] = useState(false); // Show completed problems filter
-  const [showPersonalized, setShowPersonalized] = useState(false); // Show personalized problems filter
+  const [search, setSearch] = useState("");
+  const [difficulty, setDifficulty] = useState("All");
+  const [filteredProblems, setFilteredProblems] = useState([]);
 
-  const [personalisedProblems, setPersonalisedProblems] = useState([]);
+  const [selectedTab, setSelectedTab] = useState("All"); // "All", "Completed", "Personalized"
 
   useEffect(() => {
-    if (loading) return; // Wait for auth state to load completely
-
+    if (loading) return;
     if (!user || user.role !== "user") {
-      router.replace("/"); // Redirect only if user is null after loading
+      router.replace("/");
       return;
     }
 
@@ -55,7 +57,7 @@ const ProblemsPage = () => {
           },
         }
       );
-      setPersonalisedProblems(res.data); // Assuming the response is personalized problems
+      setPersonalisedProblems(res.data);
     } catch (error) {
       console.error("Error fetching personalized problems", error);
     }
@@ -81,48 +83,29 @@ const ProblemsPage = () => {
   const toggleFavorite = async (problemId) => {
     try {
       const isFavorited = favoriteProblems.has(problemId);
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/api/users/favorites/${
+        isFavorited ? "remove" : "add"
+      }`;
 
-      if (isFavorited) {
-        await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/users/favorites/remove`,
-          { problemId },
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-            },
-          }
-        );
-      } else {
-        await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/users/favorites/add`,
-          { problemId },
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-            },
-          }
-        );
-      }
-
-      // Update UI instantly
-      setFavoriteProblems((prevFavorites) => {
-        const updatedFavorites = new Set(prevFavorites);
-        if (isFavorited) {
-          updatedFavorites.delete(problemId);
-        } else {
-          updatedFavorites.add(problemId);
+      await axios.post(
+        url,
+        { problemId },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
         }
-        return updatedFavorites;
+      );
+
+      setFavoriteProblems((prev) => {
+        const updated = new Set(prev);
+        isFavorited ? updated.delete(problemId) : updated.add(problemId);
+        return updated;
       });
     } catch (error) {
       console.error("Error updating favorite problems", error);
     }
   };
-
-  const [search, setSearch] = useState("");
-  const [difficulty, setDifficulty] = useState("All");
-  const [filteredProblems, setFilteredProblems] = useState([]);
-
 
   useEffect(() => {
     let filtered = problems;
@@ -134,24 +117,24 @@ const ProblemsPage = () => {
     }
 
     if (difficulty !== "All") {
-      filtered = filtered.filter(
-        (problem) => problem.difficulty === difficulty
-      );
+      filtered = filtered.filter((problem) => problem.difficulty === difficulty);
     }
 
-    if (showCompleted) {
+    if (selectedTab === "Completed") {
       filtered = filtered.filter((problem) => problem.completed);
     }
 
-    if (showPersonalized) {
-      // Filter based on personalized problems logic (already fetched in fetchPersonalisedProblems)
-      // Assuming "showPersonalized" simply means to show personalized suggestions
+    if (selectedTab === "Personalized") {
       filtered = personalisedProblems;
     }
 
+    if (selectedTab === "Saved") {
+      filtered = filtered.filter((problem) => favoriteProblems.has(problem._id));
+    }
+
     setFilteredProblems(filtered);
-  }, [search, difficulty, problems, showCompleted, showPersonalized]);
-  console.log(filteredProblems);
+  }, [search, difficulty, problems, personalisedProblems, selectedTab, favoriteProblems]);
+
   return (
     <div className="p-16 mx-auto">
       <div className="">
@@ -159,8 +142,7 @@ const ProblemsPage = () => {
           Problem Set
         </h1>
         <p className="text-base text-center mb-4 text-indigo-950">
-          Solve problems and improve your coding skills. Save your favorite
-          problems for later!
+          Solve problems and improve your coding skills. Save your favorite problems for later!
         </p>
       </div>
 
@@ -185,38 +167,32 @@ const ProblemsPage = () => {
         </select>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-4 mb-6">
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={showCompleted}
-            onChange={() => setShowCompleted(!showCompleted)}
-            className="form-checkbox"
-          />
-          Show Completed Problems
-        </label>
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={showPersonalized}
-            onChange={() => setShowPersonalized(!showPersonalized)}
-            className="form-checkbox"
-          />
-          Show Personalized Problems Suggestion
-        </label>
+      {/* Tabs */}
+      <div className="flex justify-center gap-4 mb-8">
+        {["All", "Completed", "Personalized", "Saved"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setSelectedTab(tab)}
+            className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
+              selectedTab === tab
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
+
       {/* Problem List */}
       <ul className="gap-6 grid grid-cols-2">
         {filteredProblems.map((problem) => (
           <li
             key={problem._id}
-            className="p-4 rounded-lg hover:bg-gray-50 border hover:border-indigo-100 transition flex justify-between items-center"
+            className="relative group p-4 rounded-lg hover:bg-gray-50 border hover:border-indigo-100 transition flex justify-between items-center"
           >
             <a href={`/problemset/${problem._id}`} className="block w-full">
-              <h3 className="text-lg text-indigo-950 font-semibold">
-                {problem.title}
-              </h3>
+              <h3 className="text-lg text-indigo-950 font-semibold">{problem.title}</h3>
               <p
                 className={`text-sm font-semibold ${
                   problem.difficulty === "Easy"
@@ -228,28 +204,24 @@ const ProblemsPage = () => {
               >
                 {problem.difficulty}
               </p>
-              {showPersonalized ? (
+
+              {selectedTab === "Personalized" ? (
                 <p className="text-green-600 text-md font-bold">
-                  {problem.matchingTags?.map((e) => e)}
+                  {problem.matchingTags?.join(", ")}
                 </p>
               ) : (
                 <p className="text-blue-950 text-xs">{problem.tags.join(", ")}</p>
               )}
 
-              {/* <p className="text-blue-950 text-xs">{problem.tags.join(", ")}</p> */}
               {problem.completed && (
                 <span className="text-green-600 font-bold">✔ Completed</span>
               )}
             </a>
             <button
-              className={`ml-4 px-3 py-2 rounded-lg text-sm ${
-                favoriteProblems.has(problem._id)
-                  ? "bg-red-500 text-white"
-                  : "bg-gray-300 text-black"
-              }`}
               onClick={() => toggleFavorite(problem._id)}
+              className="absolute top-2 right-2 text-xl text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity"
             >
-              {favoriteProblems.has(problem._id) ? "Unsave" : "Save"}
+              {favoriteProblems.has(problem._id) ? <FaStar /> : <FaRegStar />}
             </button>
           </li>
         ))}

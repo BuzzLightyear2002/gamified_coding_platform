@@ -13,7 +13,8 @@ const ContestsPage = () => {
   const router = useRouter();
 
   const [showJoined, setShowJoined] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [showCompleted, setShowCompleted] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (loading) return;
@@ -79,12 +80,15 @@ const ContestsPage = () => {
   };
 
   const filteredContests = contests
-    .filter((c) =>
-      showJoined ? c.hasParticipated : true
-    )
-    .filter((c) =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  .filter((c) => {
+    if (showCompleted) return contestCompleted.includes(c._id);
+    if (showJoined) return c.hasParticipated;
+    return true;
+  })
+  .filter((c) =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
 
   return (
     <div className="p-16 mx-auto">
@@ -111,16 +115,46 @@ const ContestsPage = () => {
       </div>
 
 
-        <div className="flex gap-4 mb-6">
-        <label className="text-sm flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={showJoined}
-            onChange={() => setShowJoined(!showJoined)}
-          />
-          Show Only Joined
-        </label>
-      </div>
+      <div className="flex gap-4 mb-6">
+  <button
+    onClick={() => {
+      setShowJoined(false);
+      setShowCompleted(false);
+    }}
+    className={`px-4 py-2 rounded-lg border ${
+      !showJoined && !showCompleted
+        ? "bg-indigo-600 text-white"
+        : "bg-gray-100"
+    }`}
+  >
+    All
+  </button>
+  <button
+    onClick={() => {
+      setShowJoined(true);
+      setShowCompleted(false);
+    }}
+    className={`px-4 py-2 rounded-lg border ${
+      showJoined && !showCompleted
+        ? "bg-indigo-600 text-white"
+        : "bg-gray-100"
+    }`}
+  >
+    Joined
+  </button>
+  <button
+    onClick={() => {
+      setShowJoined(false);
+      setShowCompleted(true);
+    }}
+    className={`px-4 py-2 rounded-lg border ${
+      showCompleted ? "bg-indigo-600 text-white" : "bg-gray-100"
+    }`}
+  >
+    Completed
+  </button>
+</div>
+
 
       {filteredContests.length === 0 ? (
         <p className="text-center text-gray-500">No contests found.</p>

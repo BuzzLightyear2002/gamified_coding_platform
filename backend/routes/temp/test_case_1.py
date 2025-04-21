@@ -1,10 +1,11 @@
-def climbStairs(num):
-    a = 1
-    b = 1
-    n = num - 1
-    for i in range(n):
-        c = a
-        a = a + b
-        b = c
-    return a
-print(climbStairs(3))
+def two_sum(nums, target):
+    num_map = {}  # Store number and its index
+
+    for i, num in enumerate(nums):
+        diff = target - num
+        if diff in num_map:
+            return [num_map[diff], i]
+        num_map[num] = i
+
+
+print(two_sum([3, 2, 4], 6))
