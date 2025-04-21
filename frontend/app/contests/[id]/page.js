@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import Link from "next/link";
+import { toast } from "react-toastify";
 
 const ContestDetailPage = () => {
   const { id } = useParams();
@@ -63,6 +64,8 @@ const ContestDetailPage = () => {
         }
       );
       setHasParticipated(true); // Update UI state
+              toast.success("You have Joined the Contest!");
+      
     } catch (error) {
       console.error("Error participating in contest:", error);
     }

@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { FaPlus } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 const DiscussionForumPage = () => {
   const [threads, setThreads] = useState([]);
@@ -65,7 +66,7 @@ const DiscussionForumPage = () => {
   const handleCreatePost = async () => {
     try {
       if (newPost.category === "") {
-        alert("Please Select Category as well");
+        toast.error("Please Select Category");
         return;
       }
       const res = await axios.post(
@@ -77,9 +78,12 @@ const DiscussionForumPage = () => {
           },
         }
       );
+      toast.success("Thread Created!");
+
       setThreads([res.data, ...threads]);
       setShowModal(false);
       location.reload();
+
     } catch (error) {
       console.error("Error creating post", error);
     }
@@ -97,6 +101,7 @@ const DiscussionForumPage = () => {
           },
         }
       );
+      toast("Thread Deleted!");
 
       // Remove the deleted thread from the frontend state
       setThreads((prevThreads) =>

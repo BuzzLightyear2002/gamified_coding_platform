@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext"; // Assuming AuthContext stores logged-in user info
 import axios from "axios";
 import { CodeBlock, dracula } from "react-code-blocks";
+import { toast } from "react-toastify";
 
 const ProblemDetails = () => {
   const { id } = useParams();
@@ -45,6 +46,12 @@ const ProblemDetails = () => {
     setSubmitOutput("");
     setSubmitError("");
 
+    if (!code.trim()) {
+      toast.error("🚫 Please write some code before submitting.");
+      return;
+    }
+    try {
+
     const res = await axios.post(
       `${process.env.NEXT_PUBLIC_API_URL}/api/code/submit/${loggedInUser._id}`,
       {
@@ -53,8 +60,29 @@ const ProblemDetails = () => {
         code,
       }
     );
-    setSubmitOutput(res.data.output); // Store submission results separately
-  }
+    const { output, xpAwarded, xpAmount, correct } = res.data;
+
+    if (correct) {
+      toast.success("✅ Your solution is correct!");
+
+      if (xpAwarded) {
+        toast.success(`🎉 You earned +${xpAmount} XP!`);
+      } if(correct && !xpAwarded) {
+        toast("✅ Already solved! No XP this time.", { icon: "ℹ️" });
+      }
+    } else {
+      toast.error("❌ Some test cases failed. Keep trying!");
+    }
+
+ setSubmitOutput(res.data.output);
+
+      // 🔹 Revalidate user data
+      await revalidateUserData();
+      fetchUser(); // Update user state in frontend
+    } catch (error) {
+      setSubmitError(error.response?.data?.error || "Submission failed");
+    }
+  };
 
   if (!problem)
     return (

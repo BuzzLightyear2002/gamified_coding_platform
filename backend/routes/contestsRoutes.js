@@ -62,11 +62,7 @@ router.post("/participate", async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     // Check if the user already participated
-    if (
-      user.participatedContests.some(
-        (p) => p._id.toString() === contestId
-      )
-    ) {
+    if (user.participatedContests.some((p) => p._id.toString() === contestId)) {
       return res
         .status(400)
         .json({ error: "Already participated in this contest" });
@@ -155,7 +151,7 @@ router.post("/submit", async (req, res) => {
       } else if (language === "python") {
         filePath = path.join(tempDir, `test_case_${index}.py`);
         testCode = `${code}\nprint(${functionName}(${test.input}))`;
-        execCommand = `python3 ${filePath}`;
+        execCommand = `python ${filePath}`;
       } else if (language === "C#") {
         filePath = path.join(tempDir, `test_case_${index}.cs`);
 
@@ -283,6 +279,11 @@ router.post("/submit", async (req, res) => {
       testCaseResults.length > 0 &&
       testCaseResults.every((result) => result.result === "Passed");
 
+    let allProblemsSolved = false;
+    let xpAwarded = false;
+    let xpAmount = 0;
+    let contestXpAwarded = false;
+
     if (allPassed) {
       const user = await User.findById(userId);
       if (!user) return res.status(404).json({ error: "User not found" });
@@ -290,13 +291,15 @@ router.post("/submit", async (req, res) => {
       const contest = await Contest.findById(contestId).populate("problems");
       if (!contest) return res.status(404).json({ error: "Contest not found" });
 
+      // Make sure this problem belongs to the contest
       if (!contest.problems.some((p) => p._id.toString() === problemId)) {
         return res
           .status(400)
           .json({ error: "Invalid problem for this contest" });
       }
 
-      let participation = user.participatedContests.find(
+      // Get or validate the user's participation
+      const participation = user.participatedContests.find(
         (p) => p.contestId.toString() === contestId
       );
 
@@ -306,37 +309,41 @@ router.post("/submit", async (req, res) => {
           .json({ error: "User has not participated in this contest" });
       }
 
+      // Prevent double-counting XP for same problem
       if (participation.solvedProblems.includes(problemId)) {
         return res.status(400).json({ error: "Problem already solved" });
       }
 
-      // ✅ Add problem to solvedProblems
+      // ✅ Update XP and progress
       participation.solvedProblems.push(problemId);
-
-      // ✅ Increase XP for solving a problem
-      user.xp.contestsXP += 50; // 50 XP for solving a problem
-      user.xp.total += 50; // 50 XP for solving a problem
+      user.xp.contestsXP += 50;
+      user.xp.total += 50;
+      xpAwarded = true;
+      xpAmount = 50;
 
       // ✅ Check if all contest problems are solved
-      const allProblemsSolved = contest.problems.every((p) =>
+      allProblemsSolved = contest.problems.every((p) =>
         participation.solvedProblems.includes(p._id.toString())
       );
 
       if (allProblemsSolved) {
         participation.completed = true;
-
-        // ✅ Increase XP for completing the contest
-        user.xp.contestsXP += 200; // 200 XP for finishing the contest
-        user.xp.total += 200; // 200 XP for finishing the contest
+        user.xp.contestsXP += 200;
+        user.xp.total += 200;
+        contestXpAwarded = true;
       }
 
       await user.save();
     }
 
+    // Send XP info to frontend
     return res.json({
-      success: allPassed,
+      correct: allPassed,
       message: allPassed ? "Correct Answer!" : "Wrong Answer!",
       output: testCaseResults,
+      xpAwarded,
+      xpAmount,
+      contestXpAwarded,
     });
   } catch (err) {
     res.status(500).json({ error: "Server error", details: err.message });

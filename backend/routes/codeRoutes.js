@@ -386,14 +386,14 @@ router.post("/submit/:id", async (req, res) => {
     const allPassed =
       testCaseResults.length > 0 &&
       testCaseResults.every((result) => result.result === "Passed");
-
+      let alreadySolved = false;
     // Update User Stats if all tests pass
     if (allPassed) {
       const user = await User.findById(req.params.id);
       if (!user) return res.status(404).json({ error: "User not found" });
 
       // Check if the user has already solved this problem
-      const alreadySolved =
+      alreadySolved =
         user.codingStats.solvedProblemIds.includes(problemId);
 
       if (!alreadySolved) {
@@ -406,10 +406,13 @@ router.post("/submit/:id", async (req, res) => {
     }
 
     return res.json({
-      success: allPassed,
+      correct: allPassed,
       message: allPassed ? "Correct Answer!" : "Wrong Answer!",
       output: testCaseResults,
+      xpAwarded: allPassed && !alreadySolved, // true only if newly solved
+      xpAmount: allPassed && !alreadySolved ? 50 : 0, // Send XP value
     });
+    
   } catch (err) {
     res.status(500).json({ error: "Server error", details: err.message });
   }

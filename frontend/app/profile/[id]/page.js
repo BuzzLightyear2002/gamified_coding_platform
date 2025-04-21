@@ -7,6 +7,7 @@ import Link from "next/link";
 import axios from "axios";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext"; // Assuming AuthContext stores logged-in user info
+import { toast } from "react-toastify";
 
 const ProfilePage = () => {
   const { id } = useParams();
@@ -104,7 +105,8 @@ const ProfilePage = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
+      toast.success("Friend Request Accepted");
+ location.reload();
       setRequests(requests.filter((req) => req._id !== friendId));
       setFriendStatus("friends");
     } catch (error) {
@@ -123,6 +125,7 @@ const ProfilePage = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      toast("Friend Request Declined");
 
       setRequests(requests.filter((req) => req._id !== friendId));
     } catch (error) {
@@ -138,6 +141,7 @@ const ProfilePage = () => {
         { friendId: id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      toast.success("Friend removed!");
 
       // Remove friend from UI
       setUser((prev) => ({
@@ -154,7 +158,7 @@ const ProfilePage = () => {
 
   const handleEdit = async () => {
     if (avatarError) {
-      alert("⚠️ Cannot save. Avatar URL is invalid.");
+      toast.error("⚠️ Cannot save. Avatar URL is invalid.");
       return;
     }
     try {
@@ -164,6 +168,8 @@ const ProfilePage = () => {
         editData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      toast.success("Profile Updated");
+
       setUser(res.data.user);
       setIsEditing(false);
       location.reload();
@@ -179,22 +185,22 @@ const ProfilePage = () => {
       <p className="text-center mt-6 text-lg text-red-500">User not found</p>
     );
 
-    const validateImageUrl = async (url) => {
-      // Simplified Regex to check basic URL structure for images
-      const urlPattern = /^(https?:\/\/.*\.(?:png|jpg|jpeg|gif|svg|webp))$/i;
-    
-      // Check if the URL matches the pattern for image files
-      if (!urlPattern.test(url)) {
-        throw new Error("Invalid URL format");
-      }
-        return true; // URL is valid and the image is accessible
-    };
-    
+  const validateImageUrl = async (url) => {
+    // Simplified Regex to check basic URL structure for images
+    const urlPattern = /^(https?:\/\/.*\.(?:png|jpg|jpeg|gif|svg|webp))$/i;
+
+    // Check if the URL matches the pattern for image files
+    if (!urlPattern.test(url)) {
+      throw new Error("Invalid URL format");
+    }
+    return true; // URL is valid and the image is accessible
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg mt-6 border">
       <h1 className="text-2xl font-bold mb-6 border-b pb-2">
-  {isOwnProfile ? "Your Profile" : `${user.name}'s Profile`}
-</h1>
+        {isOwnProfile ? "Your Profile" : `${user.name}'s Profile`}
+      </h1>
       {/* User Info */}
       <div className="flex flex-col md:flex-row items-center gap-6">
         <Image
@@ -239,9 +245,12 @@ const ProfilePage = () => {
                   Request Sent ⏳
                 </button>
               ) : (
-<button className="text-sm px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md">
-  Add Friend
-</button>
+                <button
+                  className="text-sm px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md"
+                  onClick={sendFriendRequest}
+                >
+                  Add Friend
+                </button>
               )}
             </>
           )}
@@ -282,7 +291,9 @@ const ProfilePage = () => {
 
       {/* Coding Activity */}
       <div className="mt-8">
-      <h3 className="text-xl font-semibold mb-3 border-b pb-1">Coding Activity</h3>
+        <h3 className="text-xl font-semibold mb-3 border-b pb-1">
+          Coding Activity
+        </h3>
         <div className="mt-2 space-y-2 text-gray-600">
           <p>
             ✅ <>Solved Problems:</>{" "}
@@ -356,8 +367,8 @@ const ProfilePage = () => {
 
       {/* Friends List */}
       <div className="mt-6">
-      <h3 className="text-xl font-semibold mb-3 border-b pb-1">Friends</h3>
-      <div className="flex gap-3 flex-wrap mt-2">
+        <h3 className="text-xl font-semibold mb-3 border-b pb-1">Friends</h3>
+        <div className="flex gap-3 flex-wrap mt-2">
           {user.friends && user.friends.length > 0 ? (
             user.friends.map((friend) => (
               <Link key={friend._id} href={`/profile/${friend._id}`}>
@@ -378,7 +389,9 @@ const ProfilePage = () => {
           )}
         </div>
         <div className="mt-6">
-          <h3 className="text-xl font-semibold mb-3 border-b pb-1">Favorite Questions</h3>
+          <h3 className="text-xl font-semibold mb-3 border-b pb-1">
+            Favorite Questions
+          </h3>
           <div className="flex gap-3 flex-wrap mt-2">
             {user.favorites.savedQuestions &&
             user.favorites.savedQuestions.length > 0 ? (

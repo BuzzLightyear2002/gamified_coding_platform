@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const ThreadViewPage = () => {
   const { user } = useAuth();
@@ -71,6 +72,7 @@ const ThreadViewPage = () => {
 
   const handleCommentSubmit = async () => {
     if (!user) return;
+    toast.success("Comment Sent!");
 
     try {
       const res = await axios.post(
@@ -90,6 +92,8 @@ const ThreadViewPage = () => {
     }
   };
   const handleDeleteComment = async (commentId) => {
+    toast("Comment Deleted!");
+
     try {
       await axios.delete(
         `${process.env.NEXT_PUBLIC_API_URL}/api/threads/${id}/comment/${commentId}/${user._id}`,

@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const ContestsPage = () => {
   const [contests, setContests] = useState([]);
@@ -66,6 +67,7 @@ const ContestsPage = () => {
           },
         }
       );
+      toast.success("You have Joined the Contest!");
 
       setContests((prev) =>
         prev.map((contest) =>

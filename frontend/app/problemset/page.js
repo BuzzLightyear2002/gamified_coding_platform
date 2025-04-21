@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { FaRegStar, FaStar } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 const ProblemsPage = () => {
   const [problems, setProblems] = useState([]);
@@ -96,7 +97,16 @@ const ProblemsPage = () => {
           },
         }
       );
-
+if (isFavorited === false )
+{
+          toast.success(`Problem Saved`);
+  
+}
+if (isFavorited === true )
+  {
+            toast(`Problem Unsaved`);
+    
+  }
       setFavoriteProblems((prev) => {
         const updated = new Set(prev);
         isFavorited ? updated.delete(problemId) : updated.add(problemId);
