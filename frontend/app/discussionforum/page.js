@@ -19,16 +19,17 @@ const DiscussionForumPage = () => {
     category: "",
   });
 
-  const { user, logout } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
+    if (loading) return;
     if (!user || user.role !== "user") {
-      router.push("/");
+      router.replace("/");
       return;
     }
     fetchThreads();
-  }, [user]);
+  }, [user, loading]);
 
   const fetchThreads = async () => {
     try {
@@ -63,6 +64,10 @@ const DiscussionForumPage = () => {
 
   const handleCreatePost = async () => {
     try {
+      if (newPost.category === "") {
+        alert("Please Select Category as well");
+        return;
+      }
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/threads/${user._id}`,
         { ...newPost },
@@ -74,6 +79,7 @@ const DiscussionForumPage = () => {
       );
       setThreads([res.data, ...threads]);
       setShowModal(false);
+      location.reload();
     } catch (error) {
       console.error("Error creating post", error);
     }
@@ -105,11 +111,10 @@ const DiscussionForumPage = () => {
     <div className="p-16 mx-auto">
       <div className="">
         <h1 className="text-4xl p-8 text-center font-bold mb-4 text-indigo-950">
-        Discussion Forum
+          Discussion Forum
         </h1>
         <p className="text-base text-center mb-4 text-indigo-950">
-       Discuss, Chat and brainstorm about the problems. 
-
+          Discuss, Chat and brainstorm about the problems.
         </p>
       </div>
 
@@ -158,20 +163,20 @@ const DiscussionForumPage = () => {
                 onClick={() => handleDeleteThread(thread._id)}
                 className="absolute top-2 right-2 text-red-500 hover:text-red-700"
               >
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    className="w-5 h-5"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      d="M19 7l-2 14H7L5 7m3 0V3a2 2 0 012-2h6a2 2 0 012 2v4M10 7h4"
-    />
-  </svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  className="w-5 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 7l-2 14H7L5 7m3 0V3a2 2 0 012-2h6a2 2 0 012 2v4M10 7h4"
+                  />
+                </svg>
               </button>
             )}
 
@@ -190,12 +195,11 @@ const DiscussionForumPage = () => {
               {/* Bottom Information (always at the bottom) */}
               <div className="flex justify-between items-center mt-4">
                 <div className="flex items-center gap-2">
-
-                <img
-                        src={thread.creator.avatar || "/default-avatar.png"}
-                        alt="User Avatar"
-                        className="w-8 h-8 mx-2 rounded-full"
-                      />
+                  <img
+                    src={thread.creator.avatar || "/default-avatar.png"}
+                    alt="User Avatar"
+                    className="w-8 h-8 mx-2 rounded-full"
+                  />
                   <p className="text-xs text-gray-500">{thread.creator.name}</p>
                 </div>
                 <div className="flex gap-4 text-xs text-gray-500">
@@ -237,6 +241,7 @@ const DiscussionForumPage = () => {
               onChange={(e) =>
                 setNewPost({ ...newPost, category: e.target.value })
               }
+              required
             >
               <option value="">Select Category</option>
               <option value="Algorithms">Algorithms</option>
